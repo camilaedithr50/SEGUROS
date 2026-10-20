@@ -1,0 +1,44 @@
+<?php
+session_start();
+include 'conexion.php';
+
+$user = $_POST['user'] ?? '';
+$password = $_POST['password'] ?? '';
+
+$stmt = $mysqli->prepare("SELECT id_empleado, nombre, apellido FROM empleados WHERE usuario = ? AND contrasena = ? AND cargo = 'Administrador'");
+$stmt->bind_param('ss', $user, $password);
+$stmt->execute();
+$result = $stmt->get_result();
+
+if ($result->num_rows > 0) {
+    $administrador = $result->fetch_assoc();
+    session_regenerate_id(true);
+    $_SESSION['id_empleado'] = $administrador['id_empleado'];
+    $_SESSION['tipo_usuario'] = 'admin';
+    $_SESSION['administrador_nombre'] = $administrador['nombre'] . ' ' . $administrador['apellido'];
+
+    header('Location: panelde_admin.php');
+    exit();
+}
+
+$stmt = $mysqli->prepare('SELECT id_cliente, nombre, apellido, usuario FROM clientes WHERE usuario = ? AND contrasena = ?');
+$stmt->bind_param('ss', $user, $password);
+$stmt->execute();
+$result = $stmt->get_result();
+
+if ($result->num_rows > 0) {
+    $cliente = $result->fetch_assoc();
+
+    session_regenerate_id(true);
+    unset($_SESSION['id_empleado'], $_SESSION['tipo_usuario'], $_SESSION['administrador_nombre']);
+    $_SESSION['id_cliente'] = $cliente['id_cliente'];
+    $_SESSION['cliente_nombre'] = $cliente['nombre'];
+    $_SESSION['cliente_apellido'] = $cliente['apellido'];
+    $_SESSION['usuario'] = $cliente['usuario'];
+
+    header('Location: panelde_cliente.php');
+    exit();
+} else {
+    echo "Usuario o Contraseña incorrecto";
+}
+?>
